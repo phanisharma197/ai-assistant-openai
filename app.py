@@ -1,31 +1,74 @@
-from dotenv import load_dotenv
-import os
-from openai import OpenAI
+import streamlit as st
+from ai_client import ask_text 
+from helpers import create_message
 
-load_dotenv()
-
-print("API Key loaded:", os.getenv("OPENAI_API_KEY") is not None)
-
-client = OpenAI()
-
-response = client.responses.create(
-    model="gpt-5.5",
-    input=[
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type" : "input_text",
-                    "text" : "anlayze below imaze and give me a detailed description of it",
-
-                },
-                {
-                    "type" : "input_image",
-                    "image_url" : "https://media.formula1.com/image/upload/t_16by9Centre/c_lfill,w_3392/q_auto/v1740000001/fom-website/2025/F1%20movie/f1_movie_poster16x9%20(1).webp"
-                }
-            ]
-        }
-    ]
+#setup config
+st.set_page_config(
+    page_title = "JARVIS AI",
+    page_icon = "🤖",
+    layout = "wide"
 )
 
-print(response.output_text)
+#session state intialization 
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+
+if "previous_response_id" not in st.session_state:
+    st.session_state.previous_response_id = None
+
+
+#Sidebar
+with st.sidebar:
+    st.title("🤖 Jarvis")
+
+    st.divider()
+    st.write("### Features")
+    st.write("✅ Chat")
+    st.write("✅ Image Description")
+
+#Main Page
+st.title("🤖 Jarvis")
+
+st.write("ask me anything and I will try to answer your questions or you can upload image and I will describe the image for you")
+
+#Image Uploader
+uploaded_image = st.file_uploader("upload an Image",
+                 type = ["png", "jpg", "jpeg"])
+
+
+if uploaded_image:
+    st.image(uploaded_image, caption = "uploaded Image")
+
+
+#session usage
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.write(message["content"])
+
+
+#chat input
+prompt = st.chat_input("Ask anything....")
+
+if prompt:
+    #save user message in session state
+    st.session_state.messages.append(
+        create_message("user", prompt)
+    )
+    
+
+    #Get Gen AI response
+    response = ask_text(prompt, st.session_state.previous_response_id)
+
+    #update AI memory
+    st.session_state.previous_response_id = response.id
+
+    #append UI memory
+    st.session_state.messages.append(
+        create_message("assistant", response.output_text)
+    )
+
+    st.rerun()
+
+
+    
