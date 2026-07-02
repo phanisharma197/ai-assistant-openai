@@ -17,9 +17,12 @@ def ask_text(prompt, previous_response_id):
     if previous_response_id is not None:
         args["previous_response_id"] = previous_response_id
 
-    response = client.responses.create(**args)
 
-    return response
+    args["stream"] = True
+
+    stream = client.responses.create(**args)
+    
+    return stream
 
 
 

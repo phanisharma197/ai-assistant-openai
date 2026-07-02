@@ -13,7 +13,7 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-
+#previous response id initialization
 if "previous_response_id" not in st.session_state:
     st.session_state.previous_response_id = None
 
@@ -55,20 +55,46 @@ if prompt:
     st.session_state.messages.append(
         create_message("user", prompt)
     )
-    
 
-    #Get Gen AI response
-    response = ask_text(prompt, st.session_state.previous_response_id)
+    with st.chat_message("user"):
+        st.write(prompt)
 
-    #update AI memory
-    st.session_state.previous_response_id = response.id
+    #create assistant bubble
+    with st.chat_message("assistant"):
 
-    #append UI memory
-    st.session_state.messages.append(
-        create_message("assistant", response.output_text)
+        assistant_placeholder = st.empty()
+
+        with st.spinner("Jarvis is thinking..."):
+
+            stream = ask_text(prompt,st.session_state.previous_response_id)
+            
+            full_response = ""
+
+
+        for event in stream:
+            if event.type == "response.output_text.delta":
+                full_response += event.delta
+                assistant_placeholder.markdown(full_response)
+            elif event.type == "response.completed":
+                st.session_state.previous_response_id = event.response.id    
+                
+                
+
+        
+
+
+        st.session_state.messages.append(
+            create_message("assistant", full_response)
     )
 
     st.rerun()
 
+
+    
+    
+
+    
+    
+    
 
     
